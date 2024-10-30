@@ -5,7 +5,7 @@ from wxcloudrun.dao import delete_counterbyid, query_counterbyid, insert_counter
 from wxcloudrun.model import Counters
 from wxcloudrun.response import make_succ_empty_response, make_succ_response, make_err_response
 
-
+app.json.ensure_ascii = False
 @app.route('/')
 def index():
     """
@@ -79,7 +79,25 @@ def gzh_msg():
         # 过滤取消关注事件
         return make_succ_empty_response()
     if msg_type == 'text':
-        pass
+        try:
+            content = data['Content']
+        except KeyError:
+            app.logger.info("get Content error: %s", data)
+        if content.startswith('注册'):
+            content.replace("：", ":")
+            sp = content.split(":")
+            if len(sp) == 2:
+                email = sp[-1]
+                # TODO: 注册用户
+                reply_txt = "注册功能还是在开发中，敬请期待！"
+                payload = {
+                    "ToUserName": from_user,
+                    "FromUserName": me,
+                    "CreateTime": int(datetime.now().strftime('%s')),
+                    "MsgType": 'text',
+                    "Content": reply_txt
+                }
+                return jsonify(payload)
     elif msg_type == 'event':
         reply_txt = "你好，感谢您的关注！"
         payload = {
