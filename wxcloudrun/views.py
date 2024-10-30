@@ -102,7 +102,7 @@ def gzh_msg():
         except KeyError:
             app.logger.info("get Content error: %s", data)
         if content.startswith('注册'):
-            content.replace("：", ":")
+            content = content.replace("：", ":")
             sp = content.split(":")
             app.logger.info("get content: %s", str(sp))
             if len(sp) == 2:
