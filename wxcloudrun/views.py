@@ -1,11 +1,17 @@
 from datetime import datetime
-from flask import render_template, request, jsonify
+import json
+from flask import render_template, request, Response
 from run import app
 from wxcloudrun.dao import delete_counterbyid, query_counterbyid, insert_counter, update_counterbyid
 from wxcloudrun.model import Counters
 from wxcloudrun.response import make_succ_empty_response, make_succ_response, make_err_response
 
-app.json.ensure_ascii = False
+def jsonify(data):
+    # 使用自定义的 JSON 响应函数，并确保 ensure_ascii=False
+    return Response(json.dumps(data, ensure_ascii=False), content_type="application/json; charset=utf-8")
+
+
+
 @app.route('/')
 def index():
     """
