@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import render_template, request
+from flask import render_template, request, jsonify
 from run import app
 from wxcloudrun.dao import delete_counterbyid, query_counterbyid, insert_counter, update_counterbyid
 from wxcloudrun.model import Counters
@@ -67,4 +67,27 @@ def get_count():
 
 @app.route('/api/gzh_msg', methods=['POST'])
 def gzh_msg():
+    data = request.json
+    if "action" in data and data["action"] == "CheckContainerPath":
+        return make_succ_response(0)
+    app.logger.info("get data: %s", data)
+    from_user = data['FromUserName']
+    me = data['ToUserName']
+    create_time = data['CreateTime']
+    msg_type = data['MsgType']
+    if msg_type == 'event' and data['Event'] == 'unsubscribe':
+        # 过滤取消关注事件
+        return make_succ_empty_response()
+    if msg_type == 'text':
+        pass
+    elif msg_type == 'event':
+        reply_txt = "你好，感谢您的关注！"
+        payload = {
+            "ToUserName": from_user,
+            "FromUserName": me,
+            "CreateTime": int(datetime.now().strftime('%s')),
+            "MsgType": 'text',
+            "Content": reply_txt
+        }
+        return jsonify(payload)
     return make_succ_response(0)
