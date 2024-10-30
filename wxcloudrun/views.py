@@ -6,9 +6,21 @@ from wxcloudrun.dao import delete_counterbyid, query_counterbyid, insert_counter
 from wxcloudrun.model import Counters
 from wxcloudrun.response import make_succ_empty_response, make_succ_response, make_err_response
 
+
 def jsonify(data):
     # 使用自定义的 JSON 响应函数，并确保 ensure_ascii=False
     return Response(json.dumps(data, ensure_ascii=False), content_type="application/json; charset=utf-8")
+
+
+def reply_text(from_user, to_user, reply_txt):
+    payload = {
+        "ToUserName": to_user,
+        "FromUserName": from_user,
+        "CreateTime": int(datetime.now().strftime('%s')),
+        "MsgType": 'text',
+        "Content": reply_txt
+    }
+    return jsonify(payload)
 
 
 
@@ -92,26 +104,12 @@ def gzh_msg():
         if content.startswith('注册'):
             content.replace("：", ":")
             sp = content.split(":")
+            app.logger.info("get content: %s", str(sp))
             if len(sp) == 2:
                 email = sp[-1]
                 # TODO: 注册用户
-                reply_txt = "注册功能还是在开发中，敬请期待！"
-                payload = {
-                    "ToUserName": from_user,
-                    "FromUserName": me,
-                    "CreateTime": int(datetime.now().strftime('%s')),
-                    "MsgType": 'text',
-                    "Content": reply_txt
-                }
-                return jsonify(payload)
+                return reply_text(me, from_user, "注册功能还在开发中，敬请期待！")
     elif msg_type == 'event':
-        reply_txt = "你好，感谢您的关注！"
-        payload = {
-            "ToUserName": from_user,
-            "FromUserName": me,
-            "CreateTime": int(datetime.now().strftime('%s')),
-            "MsgType": 'text',
-            "Content": reply_txt
-        }
-        return jsonify(payload)
+        reply = "你好，感谢您的关注！"
+        return reply_text(me, from_user, reply)
     return make_succ_response(0)
