@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户引导步骤</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        .container {
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 600px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .step {
+            margin: 20px 0;
+        }
+        .step h2 {
+            font-size: 1.5em;
+            color: #333;
+        }
+        .qr-code {
+            margin: 20px auto;
+            width: 200px;
+            height: 200px;
+        }
+        .description {
+            font-size: 1em;
+            color: #555;
+        }
+        .highlight {
+            color: #007BFF;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 第一步 -->
+        <div class="step">
+            <h2>第一步：关注公众号</h2>
+            <img class="qr-code" src="{{ url_for('static', filename='images/qrcode_for_gh_35fcd355deb4_258.jpg') }}" alt="扫描二维码">
+        </div>
+
+        <!-- 第二步 -->
+        <div class="step">
+            <h2>第二步：发送“注册 + 邮箱”</h2>
+            <p class="description">
+                发送示例：<span class="highlight">注册 + zhangsan@example.com</span><br>
+                我们会为您的邮箱生成练习场的登录账号。
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -113,3 +113,18 @@ def gzh_msg():
         reply = "你好，感谢您的关注！"
         return reply_text(me, from_user, reply)
     return make_succ_response(0)
+
+@app.route('/dify/landing')
+def landing_page():
+    user_name = request.args.get("user_name")
+    phone_num = request.args.get("phone_num")
+    xiaoxi_uuid = request.args.get("xiaoxi_uuid")
+    app.logger.info(f"落地页面跳转：{user_name},{phone_num}, {xiaoxi_uuid}")
+    # TODO 校验是否关注了公众号
+    
+    # TODO 已关注公众号，跳转
+    
+    # TODO 未关注公众号，展示关注公众号
+    return render_template('landing_page.html')
+    
+    # return make_succ_response(data={"user_name":user_name, "phone_num":phone_num, "xiaoxi_uuid":xiaoxi_uuid})

@@ -4,7 +4,7 @@
 FROM alpine:3.13
 
 # 容器默认时区为UTC，如需使用上海时间请启用以下时区设置命令
-# RUN apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
+RUN apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
 
 # 使用 HTTPS 协议访问容器云调用证书安装
 RUN apk add ca-certificates
@@ -14,6 +14,12 @@ RUN apk add ca-certificates
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tencent.com/g' /etc/apk/repositories \
 # 安装python3
 && apk add --update --no-cache python3 py3-pip \
+# 安装gcc，greenlet需要这玩意？
+            gcc \
+            g++ \
+            libffi-dev \
+            musl-dev \
+            python3-dev \
 && rm -rf /var/cache/apk/*
 
 # 拷贝当前项目到/app目录下（.dockerignore中文件除外）
