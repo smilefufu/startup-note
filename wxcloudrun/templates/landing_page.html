@@ -26,6 +26,8 @@
         .step h2 {
             font-size: 1.5em;
             color: #333;
+            text-align: left;
+            padding-left:20%;
         }
         .qr-code {
             margin: 20px auto;
@@ -40,24 +42,144 @@
             color: #007BFF;
             font-weight: bold;
         }
+        .hidden {
+            display: none;
+        }
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            font-size: 1em;
+            font-weight: bold;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        
+        button:active {
+            background-color: #004494;
+            transform: scale(1);
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        input[type="email"] {
+            width: 40%;
+            padding: 5px;
+            font-size: 1em;
+            border: 2px solid #007BFF;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        input[type="email"]:focus {
+            border-color: #0056b3;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        input[type="email"]::placeholder {
+            color: #ccc;
+            font-style: italic;
+        }
+        
     </style>
 </head>
 <body>
     <div class="container">
         <!-- 第一步 -->
         <div class="step">
-            <h2>第一步：关注公众号</h2>
+            <h2>您好, {{user_name}}</h2>
+            <p class="description">
+                欢迎踏入探索新世界的大门！
+            </p>
+        </div>
+        <div class="step">
+            <h2>第一步：关注讲师公众号</h2>
             <img class="qr-code" src="{{ url_for('static', filename='images/qrcode_for_gh_35fcd355deb4_258.jpg') }}" alt="扫描二维码">
         </div>
 
         <!-- 第二步 -->
         <div class="step">
-            <h2>第二步：发送“注册:邮箱”</h2>
-            <p class="description">
-                发送示例：<span class="highlight">注册:zhangsan@example.com</span><br>
-                我们会为您的邮箱生成练习场的登录账号。
-            </p>
+            <h2>第二步：发送“<span class="highlight">{{register_code}}</span>”向讲师报到</h2>
+            <p class="description">报道后就可以注册练习场账号啦！</p>
+            <p id="verification-status" class="description highlight">签到中...</span></p>
+        </div>
+
+        <!-- 第三步 -->
+        <div id="step-three" class="step hidden">
+            <h2>还差一步：填写邮箱开通练习场</h2>
+            <input type="email" id="email" placeholder="请输入您的邮箱" />
+            <button id="open-practice-button">开通练习场</button>
+            <p id="email-result" class="hidden"></p>
         </div>
     </div>
+
+    <script>
+        // 定时轮询函数
+        const checkVerificationStatus = async () => {
+            try {
+                // 调用后端API验证注册码
+                const response = await fetch(`/dify/verify_register_code?xiaoxi_uuid={{xiaoxi_uuid}}&register_code={{register_code}}`);
+                const result = await response.json();
+
+                if (result.code == 0) {
+                    // 验证成功
+                    clearInterval(polling); // 停止轮询
+                    document.getElementById('verification-status').textContent = '报到成功！';
+                    document.getElementById('step-three').classList.remove('hidden');
+                } else {
+                    // 验证未通过，继续轮询
+                    document.getElementById('verification-status').textContent = '签到中...';
+                }
+            } catch (error) {
+                console.error('验证错误:', error);
+                alert('签到失败，请稍后重试。');
+                clearInterval(polling); // 停止轮询以避免过多请求
+            }
+        };
+
+        // 每5秒轮询一次后端
+        const polling = setInterval(checkVerificationStatus, 5000);
+
+        // 开通练习场逻辑
+        document.getElementById('open-practice-button').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                alert('请输入邮箱地址');
+                return;
+            }
+
+            try {
+                // 调用后端API提交邮箱
+                const response = await fetch(`/dify/invite_email?xiaoxi_uuid={{xiaoxi_uuid}}&register_code={{register_code}}&email=${email}`);
+                const result = await response.json();
+
+                if (result.code==0) {
+                    document.getElementById('email-result').textContent = `一切顺利！即将登陆练习场...`;
+                    document.getElementById('email-result').classList.remove('hidden');
+                    setTimeout(() => {
+                        window.location.href = result.data.invite_url;
+                    }, 3000);
+                } else {
+                    document.getElementById('email-result').textContent = `小问题：${result.errorMsg}`;
+                    document.getElementById('email-result').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('提交错误:', error);
+                alert('遇到一点点小困难，刷新页面再试一下。');
+            }
+        });
+    </script>
 </body>
 </html>

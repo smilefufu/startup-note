@@ -1,6 +1,8 @@
 from datetime import datetime
 import json
 import re
+import hashlib
+import time 
 from flask import render_template, request, Response, redirect
 from run import app
 from wxcloudrun.dao import delete_counterbyid, query_counterbyid, insert_counter, update_counterbyid
@@ -92,10 +94,13 @@ def get_count():
 
 @app.route('/api/gzh_msg', methods=['POST'])
 def gzh_msg():
+    headers = request.headers
     data = request.json
     if "action" in data and data["action"] == "CheckContainerPath":
         return make_succ_response(0)
+    app.logger.info("http headers: %s", headers)
     app.logger.info("get data: %s", data)
+    
     from_user = data['FromUserName']
     me = data['ToUserName']
     create_time = data['CreateTime']
@@ -108,15 +113,36 @@ def gzh_msg():
             content = data['Content']
         except KeyError:
             app.logger.info("get Content error: %s", data)
-        if content.startswith('注册'):
+        if content.isdigit() and 4 <= len(content) <= 6:
+            # 4-6 位数字，为发送的验证码
+            app.logger.info(f"get register code:{content}")
+            register_code = content
+            user = DifyUsers.query.filter_by(register_code=register_code).first()
+            if user and user.wx_openid:
+                # 当前用户已经绑定过微信了
+                return reply_text(me, from_user, f"讲师已经过收到签到码，无需重新发送")
+            elif user:
+                # 存在已知的注册验证码,未绑定微信
+                user.wx_openid = from_user
+                user.wx_unionid = headers.get("X-WX-UNIONID")
+                user.wx_ip = headers.get("X-Original-Forwarded-For")
+                user.wx_source = headers.get("X-WX-SOURCE")
+                db.session.commit()
+                return reply_text(me, from_user, f"讲师已经收到签到码")
+            else:
+                #  系统没有分发过这个验证码
+                return reply_text(me, from_user, f"这不是有效的签到码哟～")
+        elif content.startswith('注册'):
             content = content.replace("：", ":")
             sp = content.split(":")
             app.logger.info("get content: %s", str(sp))
             if len(sp) == 2:
                 email = sp[-1].strip()
                 if is_valid_email(email=email):
-                    # 注册用户
+                    # 注册用户-正式环境
                     invite_result = requests.get("http://dify.vongcloud.com/xinshu/api/invite",params={"email":email})
+                    # 注册用户 - 测试环境
+                    # invite_result = requests.get("http://localhost:5001/xinshu/api/invite",params={"email":email})
                     if invite_result.ok:
                         invite_json = invite_result.json()
                         if invite_json["result"] == "success":
@@ -149,15 +175,98 @@ def landing_page():
             return redirect("https://dify.vongcloud.com")    
         else:
             # 跳转过，但是未完成注册
-            pass
+            register_code = user.register_code
+            if not register_code:
+                # 未生成验证码
+                register_code = generate_numeric_passcode(user_info={"user_name":user_name, "phone_num":phone_num,"xiaoxi_uuid":xiaoxi_uuid})
+                user.register_code = register_code
+                db.session.commit()
     else:
         # 新用户，需要重新引导
+        # 为用户生成一个随机验证码
+        register_code = generate_numeric_passcode(user_info={"user_name":user_name, "phone_num":phone_num,"xiaoxi_uuid":xiaoxi_uuid})
+        # 构建一个新用户信息，包含注册随机码
         new_user = DifyUsers(
             xx_user_name = user_name,
             xx_phone_num = phone_num,
-            xx_xiaoxi_uuid = xiaoxi_uuid
+            xx_xiaoxi_uuid = xiaoxi_uuid,
+            register_code = register_code
         )
         db.session.add(new_user)
         db.session.commit()
-    return render_template('landing_page.html')
+    return render_template('landing_page.html', user_name=user_name, phone_num=phone_num, xiaoxi_uuid=xiaoxi_uuid, register_code=register_code)
+
+@app.route('/dify/verify_register_code')
+def verify_register_code():
+    register_code = request.args.get("register_code")
+    xiaoxi_uuid = request.args.get("xiaoxi_uuid")
+    # 校验是否已有账号, 是否包含了wx_openid
+    user = DifyUsers.query.filter_by(xx_xiaoxi_uuid=xiaoxi_uuid).first()
+    if user.wx_openid:
+        # 已经从微信发送过签到码
+        return make_succ_empty_response()
+    else:
+        # 微信侧还没有更新绑定签到码
+        return make_err_response("")
+
+@app.route('/dify/invite_email')
+def invite_email():
+    register_code = request.args.get("register_code")
+    xiaoxi_uuid = request.args.get("xiaoxi_uuid")
+    email = request.args.get("email")
+    user = DifyUsers.query.filter_by(xx_xiaoxi_uuid=xiaoxi_uuid).first()
+    if user:
+        if is_valid_email(email=email):
+            # 注册用户-正式环境
+            invite_result = requests.get("http://dify.vongcloud.com/xinshu/api/invite",params={"email":email})
+            # 注册用户 - 测试环境
+            # invite_result = requests.get("http://localhost:5001/xinshu/api/invite",params={"email":email})
+            if invite_result.ok:
+                invite_json = invite_result.json()
+                if invite_json["result"] == "success":
+                    invite_url = invite_json["invite-url"]
+                    user.dify_email = email
+                    user.dify_token = invite_json["token"]
+                    user.dify_invite_url = invite_url
+                    db.session.commit()
+                    return make_succ_response({"invite_url":invite_url})
+                else:
+                    invite_error = invite_json["error"]
+                    # 邀请失败，用户可以自己处理
+                    return make_err_response(f"遇到一点点小麻烦：{invite_error}")
+            else:
+                # 服务器故障，需要管理员
+                return make_err_response(f"遇到一点点小麻烦,需要召唤管理员：{invite_result.text}")
+        else:
+            # 邮箱格式不对
+            return make_err_response(f"邮箱格式有点点小问题，再检查一下")
+    # 用户不存在，或者没有前面的步骤
+    return make_err_response(f"遇到一点点小困难，刷新页面再试一下")
+
+
+def generate_numeric_passcode(user_info:dict, length=6):
+    """
+    生成一个不易被推断的数字口令
+    :param user_info: dict 包含用户相关信息 (如用户名, 手机号, UUID)
+    :param length: 生成的数字口令长度 (默认为6, 可选4~6)
+    :return: 生成的数字口令
+    """
+    if length < 4 or length > 6:
+        raise ValueError("Passcode length must be between 4 and 6.")
+
+    # 用户相关信息的组合（如用户名、手机号、UUID）
+    user_identifier = "".join(user_info.values())
     
+    # 附加信息：当前时间（精确到秒）
+    current_time = str(int(time.time()))
+    
+    # 拼接用户标识和附加信息
+    input_string = f"{user_identifier}{current_time}"
+    
+    # 使用 SHA-256 生成哈希值
+    hashed = hashlib.sha256(input_string.encode('utf-8')).hexdigest()
+    
+    # 将哈希值转换为整数后取前 N 位
+    numeric_passcode = str(int(hashed, 16))[:length]
+    
+    return numeric_passcode
