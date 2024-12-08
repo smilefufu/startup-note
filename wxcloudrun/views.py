@@ -120,7 +120,7 @@ def gzh_msg():
             user = DifyUsers.query.filter_by(register_code=register_code).first()
             if user and user.wx_openid:
                 # 当前用户已经绑定过微信了
-                return reply_text(me, from_user, f"讲师已经过收到签到码，无需重新发送")
+                return reply_text(me, from_user, f"已签到，无需重新发送")
             elif user:
                 # 存在已知的注册验证码,未绑定微信
                 user.wx_openid = from_user
@@ -128,7 +128,7 @@ def gzh_msg():
                 user.wx_ip = headers.get("X-Original-Forwarded-For")
                 user.wx_source = headers.get("X-WX-SOURCE")
                 db.session.commit()
-                return reply_text(me, from_user, f"讲师已经收到签到码")
+                return reply_text(me, from_user, f"签到成功！请返回网页填写登录邮箱。")
             else:
                 #  系统没有分发过这个验证码
                 return reply_text(me, from_user, f"这不是有效的签到码哟～")
