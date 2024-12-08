@@ -92,6 +92,37 @@
             color: #ccc;
             font-style: italic;
         }
+        #email-result {
+            margin-top: 10px;
+            font-size: 1em;
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .success {
+            display: inline-block;
+            width: 70%;        
+            margin-top: 10px;
+            font-size: 1em;
+            padding: 10px;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #28a745; /* 绿色 */
+            border: 1px solid #28a745;
+        }
+        
+        #email-result.error {
+            color: #fff;
+            background-color: #dc3545; /* 红色 */
+            border: 1px solid #dc3545;
+        }
+        
+        #email-result.hidden {
+            display: none;
+        }
         
     </style>
 </head>
@@ -166,18 +197,24 @@
                 const result = await response.json();
 
                 if (result.code==0) {
-                    document.getElementById('email-result').textContent = `一切顺利！即将登陆练习场...`;
+                    document.getElementById('email-result').innerHTML = `<span class="success">一切顺利！即将前往练习场，设置密码</span><p><span class="highlight">${result.data.invite_url}</span></p>`;
+                    document.getElementById('email-result').className = 'hidden';
                     document.getElementById('email-result').classList.remove('hidden');
+                    
                     setTimeout(() => {
                         window.location.href = result.data.invite_url;
-                    }, 3000);
+                    }, 3000); 
+                    
                 } else {
-                    document.getElementById('email-result').textContent = `小问题：${result.errorMsg}`;
+                    document.getElementById('email-result').innerHTML = `呃～${result.errorMsg}`;
+                    document.getElementById('email-result').className = 'error';
                     document.getElementById('email-result').classList.remove('hidden');
                 }
             } catch (error) {
                 console.error('提交错误:', error);
-                alert('遇到一点点小困难，刷新页面再试一下。');
+                document.getElementById('email-result').innerHTML = `遇到一点点小困难，刷新页面再试一下。`;
+                document.getElementById('email-result').className = 'error';
+                document.getElementById('email-result').classList.remove('hidden');
             }
         });
     </script>
