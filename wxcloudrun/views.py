@@ -140,7 +140,7 @@ def gzh_msg():
                 email = sp[-1].strip()
                 if is_valid_email(email=email):
                     # 注册用户-正式环境
-                    invite_result = requests.get("http://dify.vongcloud.com/xinshu/api/invite",params={"email":email})
+                    invite_result = requests.get("https://dify.vongcloud.com/xinshu/api/invite",params={"email":email})
                     # 注册用户 - 测试环境
                     # invite_result = requests.get("http://localhost:5001/xinshu/api/invite",params={"email":email})
                     if invite_result.ok:
@@ -172,7 +172,7 @@ def landing_page():
     if user:
         if user.dify_email and user.dify_token:
             # 曾经注册过dify， 直接跳转
-            return redirect("http://dify.vongcloud.com")    
+            return redirect("https://dify.vongcloud.com")    
         else:
             # 跳转过，但是未完成注册
             register_code = user.register_code
@@ -218,7 +218,7 @@ def invite_email():
     if user:
         if is_valid_email(email=email):
             # 注册用户-正式环境
-            invite_result = requests.get("http://dify.vongcloud.com/xinshu/api/invite",params={"email":email})
+            invite_result = requests.get("https://dify.vongcloud.com/xinshu/api/invite",params={"email":email})
             # 注册用户 - 测试环境
             # invite_result = requests.get("http://host.docker.internal:5001/xinshu/api/invite",params={"email":email})
             if invite_result.ok:
