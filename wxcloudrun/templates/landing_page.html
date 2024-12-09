@@ -180,8 +180,8 @@
             }
         };
 
-        // 每5秒轮询一次后端
-        const polling = setInterval(checkVerificationStatus, 5000);
+        // 每1秒轮询一次后端
+        const polling = setInterval(checkVerificationStatus, 1000);
 
         // 开通练习场逻辑
         document.getElementById('open-practice-button').addEventListener('click', async () => {
