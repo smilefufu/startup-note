@@ -8,6 +8,8 @@ from wxcloudrun.model import Counters
 # 初始化日志
 logger = logging.getLogger('log')
 
+# 修改db连接的字符集为utf8mb4
+db.engine.execute("set names utf8mb4")
 
 def query_counterbyid(id):
     """
