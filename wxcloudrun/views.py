@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import re
 import hashlib
+import base64
 import time 
 from flask import render_template, request, Response, redirect
 from run import app
@@ -164,6 +165,7 @@ def gzh_msg():
 @app.route('/dify/landing')
 def landing_page():
     user_name = request.args.get("user_name")
+    user_name_b64 = base64.b64encode(user_name.encode('utf8')).decode('utf8')
     phone_num = request.args.get("phone_num")
     xiaoxi_uuid = request.args.get("xiaoxi_uuid")
     app.logger.info(f"落地页面跳转：{user_name},{phone_num}, {xiaoxi_uuid}")
@@ -187,7 +189,7 @@ def landing_page():
         register_code = generate_numeric_passcode(user_info={"user_name":user_name, "phone_num":phone_num,"xiaoxi_uuid":xiaoxi_uuid})
         # 构建一个新用户信息，包含注册随机码
         new_user = DifyUsers(
-            xx_user_name = user_name,
+            xx_user_name = user_name_b64,
             xx_phone_num = phone_num,
             xx_xiaoxi_uuid = xiaoxi_uuid,
             register_code = register_code
