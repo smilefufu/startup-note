@@ -162,8 +162,10 @@ def gzh_msg():
         return reply_text(me, from_user, reply)
     return make_succ_response(0)
 
+@app.route('/dify/landing/<version>', defaults={'version': 'v2'})
 @app.route('/dify/landing')
-def landing_page():
+def landing_page(version='v1'):
+    app.logger.info("version: %s", version)
     user_name = request.args.get("user_name")
     user_name_b64 = base64.b64encode(user_name.encode('utf8')).decode('utf8')
     phone_num = request.args.get("phone_num")
@@ -196,7 +198,10 @@ def landing_page():
         )
         db.session.add(new_user)
         db.session.commit()
-    return render_template('landing_page.html', user_name=user_name, phone_num=phone_num, xiaoxi_uuid=xiaoxi_uuid, register_code=register_code)
+    if version == 'v2':
+        return render_template('landing_page_v2.html', user_name=user_name, phone_num=phone_num, xiaoxi_uuid=xiaoxi_uuid, register_code=register_code)
+    else:
+        return render_template('landing_page.html', user_name=user_name, phone_num=phone_num, xiaoxi_uuid=xiaoxi_uuid, register_code=register_code)
 
 @app.route('/dify/verify_register_code')
 def verify_register_code():
