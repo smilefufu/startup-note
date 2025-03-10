@@ -184,14 +184,14 @@ def landing_page(version='v1'):
             register_code = user.register_code
             if not register_code:
                 # 未生成验证码
-                register_code = generate_numeric_passcode(user_info={"user_name":user_name_b64, "phone_num":phone_num,"xiaoxi_uuid":xiaoxi_uuid})
+                register_code = generate_numeric_passcode(user_info={"user_name":user_name, "phone_num":phone_num,"xiaoxi_uuid":xiaoxi_uuid})
                 user.register_code = register_code
                 db.session.commit()
     else:
         # 新用户，需要重新引导
         # 为用户生成一个随机验证码
         app.logger.info(f"用户 {user_name} 未注册过，需要引导注册")
-        register_code = generate_numeric_passcode(user_info={"user_name":user_name_b64, "phone_num":phone_num,"xiaoxi_uuid":xiaoxi_uuid})
+        register_code = generate_numeric_passcode(user_info={"user_name":user_name, "phone_num":phone_num,"xiaoxi_uuid":xiaoxi_uuid})
         # 构建一个新用户信息，包含注册随机码
         new_user = DifyUsers(
             xx_user_name = user_name_b64,
